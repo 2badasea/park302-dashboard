@@ -1,0 +1,42 @@
+.wrapper {
+  display: flex;
+  min-height: 100vh;
+}
+
+.main {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  margin-left: 240px;
+  transition: margin-left 0.25s ease;
+  min-width: 0;
+}
+
+.mainExpanded {
+  margin-left: 64px;
+}
+
+.content {
+  flex: 1;
+  padding: 24px;
+  background-color: #f5f6fa;
+  overflow-y: auto;
+}
+
+/* 태블릿 */
+@media (max-width: 992px) {
+  .main {
+    margin-left: 64px;
+  }
+}
+
+/* 모바일 */
+@media (max-width: 576px) {
+  .main {
+    margin-left: 0;
+  }
+
+  .content {
+    padding: 16px;
+  }
+}

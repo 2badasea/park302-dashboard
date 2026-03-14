@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Program Files/Java/**)",
+      "Read(//c/Program Files/**)"
+    ]
+  }
+}
