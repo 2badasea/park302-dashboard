@@ -1,7 +1,5 @@
 # CLAUDE.md
-
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-
+- 작업을 하게 되면서 클로드 규칙을 바탕으로 하되, 수정해야 할 사항이 발생한다면 항상 제안해줄 것
 ---
 
 ## 프로젝트 개요
