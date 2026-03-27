@@ -52,7 +52,7 @@ public class Agent {
      * DB CHAR(1)과 EnumType.STRING으로 매핑
      */
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 1)
+    @Column(nullable = false, columnDefinition = "CHAR(1)")
     private IsVisible isVisible = IsVisible.Y;
 
     @Column(nullable = false, updatable = false)
