@@ -71,10 +71,19 @@
 
 ## 공통 유틸 함수
 
-`src/utils/` 또는 `src/lib/` 에 위치시키고 import해서 사용한다.
+`src/utils/` 에 위치시키고 import해서 사용한다.
 아래 함수들은 확정된 공통 유틸이며 임의로 변경하지 않는다. 수정이 필요하면 사용자에게 먼저 제안한다.
 
+### 파일 구조
+
+| 파일 | 역할 |
+|---|---|
+| `src/utils/gFetch.ts` | HTTP 통신 전용 (`gFetch`) |
+| `src/utils/common.ts` | UI 유틸 (`gToast`, `gLoading`, `gAlert` 등) + 검증 유틸 (`checkInput`, `checkRequired`) |
+
 > **주의**: `gFetch`는 현재 인증 헤더 처리가 없다. JWT 방식 확정에 따라 `Authorization: Bearer <token>` 헤더 자동 추가 로직을 추가해야 한다.
+
+### gFetch (`src/utils/gFetch.ts`)
 
 ```javascript
 /**
@@ -98,7 +107,11 @@ export const gFetch = async (url, options = {}) => {
   if (res.status === 204) return null;
   return res.json();
 };
+```
 
+### UI / 검증 유틸 (`src/utils/common.ts`)
+
+```javascript
 /** 우측 상단 토스트. 앱에 <ToastContainer> 마운트 필요 */
 export const gToast = (msg, type = 'info') => toast[type](msg);
 
@@ -124,6 +137,52 @@ export const gConfirm = (title, html = '') =>
     title, html: html || undefined, icon: 'question',
     showCancelButton: true, confirmButtonText: '확인', cancelButtonText: '취소',
   }).then((r) => r.isConfirmed);
+
+/**
+ * 단일 값 빈값·공백 검증
+ * @returns true: 유효한 값 있음 / false: null·undefined·빈 문자열·공백만 있음
+ */
+export const checkInput = (value) => typeof value === 'string' && value.trim().length > 0;
+
+/**
+ * 여러 필드 일괄 필수 검증 — 첫 번째 실패 항목의 메시지 반환, 모두 통과 시 null
+ * @example
+ * const err = checkRequired([{ value: form.name, label: '업체명' }]);
+ * if (err) { gToast(err, 'warning'); return; }
+ */
+export const checkRequired = (fields) => {
+  for (const { value, label } of fields) {
+    if (!checkInput(value)) return `${label}을(를) 입력해 주세요.`;
+  }
+  return null;
+};
+
+/** 이메일 형식 검증 (저장 시 호출) */
+export const validateEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+
+/**
+ * 사업자등록번호 자동 포맷팅 (000-00-00000)
+ * onChange 핸들러에서 호출. 클래스 agentNum은 CSS 구분 전용 (이벤트 바인딩 없음)
+ */
+export const formatBusinessNumber = (value) => {
+  const d = value.replace(/\D/g, '').slice(0, 10);
+  if (d.length < 4) return d;
+  if (d.length < 6) return `${d.slice(0,3)}-${d.slice(3)}`;
+  return `${d.slice(0,3)}-${d.slice(3,5)}-${d.slice(5)}`;
+};
+
+/** 전화번호 자동 포맷팅 (02-XXXX-XXXX / 000-XXXX-XXXX). onChange 핸들러에서 호출 */
+export const formatTel = (value) => {
+  const d = value.replace(/\D/g, '').slice(0, 11);
+  if (d.startsWith('02')) {
+    if (d.length < 3) return d;
+    if (d.length < 7) return `${d.slice(0,2)}-${d.slice(2)}`;
+    return `${d.slice(0,2)}-${d.slice(2,-4)}-${d.slice(-4)}`;
+  }
+  if (d.length < 4) return d;
+  if (d.length < 8) return `${d.slice(0,3)}-${d.slice(3)}`;
+  return `${d.slice(0,3)}-${d.slice(3,-4)}-${d.slice(-4)}`;
+};
 ```
 
 ---
@@ -151,6 +210,7 @@ export const gConfirm = (title, html = '') =>
 - **React-Toastify** (`gToast`): 폼 검증 메시지, 가벼운 안내/성공/실패 토스트
 
 `gConfirm` 필수 적용 대상:
+- **등록·수정 등 모든 데이터 쓰기(CUD) 작업** ← 공통 규칙
 - 삭제 작업
 - 대량 변경 작업
 - 외부 DB 수정 등 민감 작업
@@ -357,7 +417,8 @@ src/
 - 변경은 가능한 작은 단위로 쪼개어 **diff가 과도하게 커지지 않게** 한다.
 - **"UI만" 요청**이면 API/비즈니스/DB/연동 로직은 구현하지 않는다.
   → UI 구조·레이아웃·TUI Grid 정의·이벤트 핸들러 골격까지만 구현한다.
-- **파일 수정 시 워크플로우**: 변경 내용을 먼저 diff(suggest) 형태로 제시하고, 사용자 확인 후 실제 파일에 적용(apply/write)한다. 단, 사용자가 "바로 적용", "즉시 수정" 등 명시적으로 즉시 처리를 요청한 경우는 제외한다.
+- **파일 수정 시 워크플로우**: Edit 툴을 통해 IDE diff(before/after 코드 탭)로 변경 내용을 제시하고, 사용자가 IDE에서 승인 후 적용된다. 신규 파일(Write)은 툴 호출 시 내용을 확인 후 승인한다.
+- **CLAUDE.md 업데이트 제안**: 작업 지시나 요청사항 중 공통 규칙·컨벤션으로 적용할 여지가 있는 내용이 발견되면, 해당 내용을 CLAUDE.md에 반영할지 여부를 사용자에게 먼저 제안한다.
 
 ---
 

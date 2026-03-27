@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ColumnOptions, Row } from 'tui-grid'
 import ToastGridWrapper, { ToastGridHandle } from '../../lib/ToastGridWrapper'
 import { agentService, AgentListItem } from '../../services/agentService'
-import { gAlert, gCloseLoading, gConfirm, gLoading, gSuccess } from '../../utils/gUI'
+import { gAlert, gCloseLoading, gConfirm, gLoading, gSuccess } from '../../utils/common'
 import AgentModal from './AgentModal'
 
 // -------------------------------------------------------------------------

@@ -6,10 +6,9 @@ backend/.gradle/
 backend/out/
 backend/*.jar
 backend/*.war
-backend/application-local.yml
-backend/application-local.properties
-backend/src/main/resources/application-local.yml
-backend/src/main/resources/application-local.properties
+backend/src/main/resources/application.properties
+backend/src/main/resources/application-dev.properties
+backend/src/main/resources/application-prod.properties
 
 # ========================
 # Frontend (React / Vite)

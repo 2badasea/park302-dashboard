@@ -47,6 +47,24 @@ export interface AgentSaveRequest {
   memo?: string
 }
 
+/** 업체담당자 단건 항목 (목록 조회 응답 + 저장 요청에 공용) */
+export interface AgentManagerItem {
+  id?: number
+  name: string
+  department: string | null
+  position: string | null
+  tel: string | null
+  email: string | null
+}
+
+/** 담당자 일괄 저장 요청 */
+export interface AgentManagerSaveRequest {
+  /** upsert 대상 (id 있으면 update, id 없으면 insert) */
+  managers: AgentManagerItem[]
+  /** soft delete 대상 id 목록 */
+  deleteIds: number[]
+}
+
 // -------------------------------------------------------------------------
 // API 호출 함수
 // -------------------------------------------------------------------------
@@ -77,4 +95,12 @@ export const agentService = {
   /** 삭제 (soft delete, 복수) */
   delete: (ids: number[]) =>
     gFetch(BASE, { method: 'DELETE', body: JSON.stringify({ ids }) }),
+
+  /** 업체담당자 목록 조회 */
+  getManagers: (agentId: number) =>
+    gFetch(`${BASE}/${agentId}/managers`),
+
+  /** 업체담당자 일괄 저장 (upsert + soft delete) */
+  saveManagers: (agentId: number, data: AgentManagerSaveRequest) =>
+    gFetch(`${BASE}/${agentId}/managers`, { method: 'PUT', body: JSON.stringify(data) }),
 }
