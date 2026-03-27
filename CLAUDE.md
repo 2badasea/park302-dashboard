@@ -140,9 +140,11 @@ export const gConfirm = (title, html = '') =>
 │             │                          │
 └─────────────┴──────────────────────────┘
 ```
-- 데스크톱 우선(Desktop First) 설계
-- 태블릿: 사이드바 collapse 지원
-- 모바일: 조회 중심 UI. 복잡한 편집/운영 기능은 PC 전용
+- 데스크톱 우선(Desktop First) 설계이나, **기본적으로 반응형(Responsive)** 으로 구성한다
+- 데스크톱(≥1024px): 사이드바 고정 표시, 전체 기능 사용
+- 태블릿(768px~1023px): 사이드바 collapse 지원, 주요 기능 사용 가능
+- 모바일(~767px): 사이드바 오버레이·햄버거 메뉴 전환, 조회 중심 UI. 복잡한 편집/운영 기능은 PC 전용
+- Bootstrap 5 반응형 그리드(col-xs, col-sm, col-md, col-lg)를 기본으로 활용하며, 별도 미디어 쿼리가 필요하면 `common.css`에 정의한다
 
 ### Alert / Confirm UX
 - **SweetAlert2** (`gSuccess`, `gAlert`, `gConfirm`): confirm 다이얼로그, alert, 모달형 피드백
@@ -153,6 +155,15 @@ export const gConfirm = (title, html = '') =>
 - 대량 변경 작업
 - 외부 DB 수정 등 민감 작업
 - 외부 전파(ERP 공지 전달 등)가 있는 작업
+
+### CSS 스타일링 규칙
+
+- **전역 공통 CSS 우선**: `src/styles/common.css`에 재사용 가능한 유틸리티 클래스를 선언하고 className으로 사용한다
+  - 예) `.h-50 { height: 50% !important; }`, `.flex-center { display: flex; align-items: center; justify-content: center; }`
+  - Bootstrap 5에 없는 공통 패턴이 2곳 이상 반복되면 `common.css`에 정의한다
+- **인라인 스타일(`style={{...}}`) 사용 제한**: 동적으로 계산된 값(예: JS 변수로 결정되는 width, top 등) 또는 단발성 예외에만 허용한다
+- **컴포넌트 전용 CSS**: 특정 컴포넌트에만 쓰이는 스타일은 해당 컴포넌트 폴더에 `.module.css` 또는 동명 `.css` 파일로 분리한다
+- Bootstrap 5 유틸리티 클래스로 충분히 커버되는 경우에는 별도 CSS 추가 없이 Bootstrap만 사용한다
 
 ### 상세/등록/수정 UI
 - 상세 조회, 등록, 수정은 **모달**로 처리한다 (별도 페이지 이동 없음)
@@ -206,6 +217,7 @@ export const gConfirm = (title, html = '') =>
 
 ```
 src/main/java/.../
+  controller/              # REST API 컨트롤러
   entity/                  # JPA 엔티티 (도메인 모델)
   repository/              # Spring Data JPA Repository
     projection/            # 목록/조회용 Projection 인터페이스
@@ -215,6 +227,9 @@ src/main/java/.../
   config/                  # Security / 스토리지 / 예외 처리 등 설정
   common/
     enums/                 # 업무 Enum
+    ResMessage.java        # 공통 API 응답 래퍼 { code, msg, data }
+    GridPageRequest.java   # 페이지네이션 요청 베이스 (page, perPage). 이름 주의: Spring Data의 PageRequest와 충돌 방지
+    PageData.java          # 페이지네이션 응답 래퍼 { content, totalCount, totalPages, currentPage, perPage }
 ```
 
 ### 프론트엔드 폴더 구조
@@ -259,13 +274,18 @@ src/
 - 매직넘버와 과도한 하드코딩을 최소화한다
 - 과도한 한 줄 체이닝, 복잡한 삼항연산, 불필요한 추상화를 지양한다
 - 명확한 네이밍을 사용하고 지나친 축약어를 피한다
+- **유지보수성과 재활용성을 항상 고려**한다. 동일 패턴이 2곳 이상에서 반복된다면 공통화를 검토하고, 공통화 시 사용자에게 먼저 제안한다
 
 ### 주석 정책
+로직이 있는 곳에는 **충분한 주석**을 작성한다. 코드 한 줄짜리 단순 대입은 생략해도 되지만, 흐름·분기·계산·조건이 있다면 왜 이렇게 했는지 의도를 남긴다.
+
 주석이 **필수**인 구간:
-- 복잡한 비즈니스 로직
+- 복잡한 비즈니스 로직 (분기 조건, 계산식, 상태 판단 등)
 - 보안 관련 처리
 - 외부 연동 지점 (ERP API 호출 등)
 - 상태 전이 로직
+- 공통 유틸 함수 / 커스텀 훅 — 파라미터·반환값·사용 의도 명시
+- 컴포넌트 props — 역할이 불명확한 prop은 JSDoc 또는 인라인 주석으로 설명
 
 자명한 코드에 과도한 주석을 달지 않는다. 코드의 의도는 이름과 구조로 먼저 드러나야 한다.
 
@@ -286,6 +306,26 @@ src/
 - 런타임 동적 DataSource 전환 전략이 필요 — 구현 전 별도 설계 논의 필요
 - `menu` 테이블 스키마는 업체 간 공통 스키마임을 확인함
 - **1차에서는 더미데이터 기반 UI만 구현**
+
+---
+
+## 추후 구현 예정 (필수) 작업
+
+아래 항목은 현재 미구현 상태이며 반드시 구현해야 한다.
+**구현 완료 시**: 동작 방식을 이 문서 하단에 기록하고, 해당 항목을 이 목록에서 제거한다.
+
+| 항목 | 현재 상태 | 이유 |
+|---|---|---|
+| JWT 인증 구현 | SecurityConfig `permitAll()` 임시 처리 | 초기 개발 편의상 인증 없이 API 오픈. 운영 전 반드시 적용 필요 |
+
+### JWT 구현 시 필요 작업
+- `JwtUtil`: 토큰 생성 / 검증
+- `JwtAuthenticationFilter`: 모든 요청에서 토큰 추출 및 인증
+- `SecurityConfig`: filter chain 구성, 경로별 인가 (로그인 endpoint 제외 전체 인증 필요)
+- `AuthController`: `POST /api/auth/login` 로그인 엔드포인트
+- `UserDetailsService`: 관리자 계정 조회 로직
+- 프론트엔드 `gFetch`: `Authorization: Bearer <token>` 헤더 자동 추가 (CLAUDE.md 공통 유틸 주의 참고)
+- 프론트엔드: 토큰 저장 (localStorage 또는 sessionStorage) 및 로그인 페이지
 
 ---
 
@@ -317,6 +357,7 @@ src/
 - 변경은 가능한 작은 단위로 쪼개어 **diff가 과도하게 커지지 않게** 한다.
 - **"UI만" 요청**이면 API/비즈니스/DB/연동 로직은 구현하지 않는다.
   → UI 구조·레이아웃·TUI Grid 정의·이벤트 핸들러 골격까지만 구현한다.
+- **파일 수정 시 워크플로우**: 변경 내용을 먼저 diff(suggest) 형태로 제시하고, 사용자 확인 후 실제 파일에 적용(apply/write)한다. 단, 사용자가 "바로 적용", "즉시 수정" 등 명시적으로 즉시 처리를 요청한 경우는 제외한다.
 
 ---
 
@@ -331,6 +372,32 @@ src/
 - **예외처리**: `GlobalApiExceptionHandler` — 해당 기능에서 발생 가능한 예외가 모두 핸들링되는지 확인. 컨트롤러 실행 이전(예: multipart 파싱 단계)에 던져지는 예외는 `@RestControllerAdvice`가 잡지 못할 수 있으므로 특히 주의
 
 점검 후 수정 사항은 **"즉시 수정 항목"** 과 **"제안 사항(승인 필요)"** 으로 구분하여 보고한다.
+
+---
+
+## DB 스키마 관리
+
+### 파일 구조
+
+DB 스키마는 **하이브리드 방식**으로 관리한다.
+
+```
+docs/db/
+  schema.sql              # 단일 정오답(Full Schema) — 항상 최신 전체 스키마 상태 유지
+  versions/
+    v_YYMMDD.sql          # 델타(변경분만) — 해당 날짜에 추가/변경된 DDL만 포함
+```
+
+- `schema.sql`: 새 환경 셋업 시 이 파일 하나만 실행하면 전체 스키마가 구성되어야 한다.
+- `versions/v_YYMMDD.sql`: 이미 구축된 환경에 변경분만 적용할 때 사용. 히스토리 추적 용도.
+
+### 스키마 변경 시 규칙
+
+- DDL 변경은 **사전 승인 없이 금지**. 필요하면 "제안"까지만 한다.
+- 승인 후 변경 작업 시 **반드시 두 곳 모두 업데이트**한다:
+  1. `docs/db/schema.sql` — 전체 스키마에 변경 반영
+  2. `docs/db/versions/v_YYMMDD.sql` — 해당 날짜 델타 파일에 변경분만 추가
+- 작업 완료 전 반드시 확인: 테이블/컬럼 추가·변경이 발생했다면 위 두 파일을 최신화한 뒤 완료로 간주한다.
 
 ---
 
@@ -354,6 +421,10 @@ src/
   - **Changed files**: 변경 파일 목록 (경로)
   - **Summary**: 핵심 변경 요약 (3~12줄)
   - **How to verify**: 실행/화면/간단 점검 방법
+  - **DB schema**: 이번 작업에서 테이블/컬럼 추가·변경이 있었다면 아래 두 파일 최신화 여부 확인
+    - `docs/db/schema.sql` — 전체 스키마 반영
+    - `docs/db/versions/v_YYMMDD.sql` — 델타(변경분만) 파일 추가
+    - 변경 없으면 "없음"으로 명시
   - **Notes/Risks**: 주의점/추가 확인 포인트
   - **권장 커밋 메시지**: 제안만, 한글로 작성
 

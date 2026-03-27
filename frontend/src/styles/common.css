@@ -50,3 +50,23 @@ body {
 .btn {
   font-size: 0.875rem;
 }
+
+/* ========================
+   TUI Grid
+   ======================== */
+/* onRowClick이 있는 그리드: 행에 pointer 커서 적용 */
+.tui-grid-cursor-pointer .tui-grid-cell {
+  cursor: pointer;
+}
+
+/* ========================
+   모달 공통
+   ======================== */
+/* Bootstrap modal을 JS 없이 React state로 제어할 때 backdrop */
+.modal-backdrop-custom {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1040;
+}
+
