@@ -14,6 +14,7 @@ import java.time.LocalDateTime;
  * 업체 엔티티
  * ERP 연동 업체 및 단순 관리 업체를 모두 포함한다.
  * client_code가 있는 업체만 ERP 연동 대상이며, 없는 업체는 대시보드 내부 관리 전용이다.
+ * api_key가 있는 업체는 외부 API(/api/external/**)를 통해 문의를 등록할 수 있다.
  */
 @Entity
 @Table(name = "agent")
@@ -28,6 +29,18 @@ public class Agent {
     /** ERP 연동 식별 코드 (예: cali-dev). 연동 없는 업체는 NULL */
     @Column(unique = true)
     private String clientCode;
+
+    /** 외부 API 인증 키 (X-Api-Key 헤더). NULL이면 외부 API 사용 불가 */
+    @Column(unique = true, length = 100)
+    private String apiKey;
+
+    /** webhook 수신 URL. NULL이면 이벤트 발송 안 함 */
+    @Column(length = 500)
+    private String callbackUrl;
+
+    /** webhook 호출 시 X-Api-Key 헤더에 담을 키 */
+    @Column(length = 100)
+    private String callbackKey;
 
     @Column(nullable = false, length = 100)
     private String name;
@@ -78,12 +91,15 @@ public class Agent {
 
     /**
      * 등록용 팩토리 메서드
-     * client_code는 빈 문자열이면 NULL로 저장 (UNIQUE 제약 상 빈 문자열 중복 방지)
+     * client_code, api_key는 빈 문자열이면 NULL로 저장 (UNIQUE 제약 상 빈 문자열 중복 방지)
      */
     public static Agent create(AgentDTO.CreateRequest req) {
         Agent agent = new Agent();
         agent.name = req.getName();
         agent.clientCode = StringUtils.hasText(req.getClientCode()) ? req.getClientCode().trim() : null;
+        agent.apiKey = StringUtils.hasText(req.getApiKey()) ? req.getApiKey().trim() : null;
+        agent.callbackUrl = StringUtils.hasText(req.getCallbackUrl()) ? req.getCallbackUrl().trim() : null;
+        agent.callbackKey = StringUtils.hasText(req.getCallbackKey()) ? req.getCallbackKey().trim() : null;
         agent.businessNumber = req.getBusinessNumber();
         agent.contactTel = req.getContactTel();
         agent.contactEmail = req.getContactEmail();
@@ -94,11 +110,14 @@ public class Agent {
 
     /**
      * 수정 메서드
-     * client_code는 빈 문자열이면 NULL로 저장
+     * client_code, api_key는 빈 문자열이면 NULL로 저장
      */
     public void update(AgentDTO.UpdateRequest req) {
         this.name = req.getName();
         this.clientCode = StringUtils.hasText(req.getClientCode()) ? req.getClientCode().trim() : null;
+        this.apiKey = StringUtils.hasText(req.getApiKey()) ? req.getApiKey().trim() : null;
+        this.callbackUrl = StringUtils.hasText(req.getCallbackUrl()) ? req.getCallbackUrl().trim() : null;
+        this.callbackKey = StringUtils.hasText(req.getCallbackKey()) ? req.getCallbackKey().trim() : null;
         this.businessNumber = req.getBusinessNumber();
         this.contactTel = req.getContactTel();
         this.contactEmail = req.getContactEmail();

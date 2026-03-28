@@ -3,6 +3,7 @@ package com.park302.dashboard.service;
 import com.park302.dashboard.common.PageData;
 import com.park302.dashboard.common.ResMessage;
 import com.park302.dashboard.common.enums.IsVisible;
+import com.park302.dashboard.common.exception.UnauthorizedException;
 import com.park302.dashboard.dto.AgentDTO;
 import com.park302.dashboard.entity.Agent;
 import com.park302.dashboard.mapper.AgentMapper;
@@ -10,6 +11,8 @@ import com.park302.dashboard.repository.AgentRepository;
 import com.park302.dashboard.repository.projection.AgentListProjection;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -70,6 +73,17 @@ public class AgentService {
     }
 
     /**
+     * api_key로 업체 조회 — ApiKeyAuthFilter에서 호출.
+     * @Cacheable: api_key → Agent 매핑을 캐싱하여 매 외부 API 요청마다 발생하는 DB 조회를 방지한다.
+     * 업체 정보는 거의 변경되지 않으므로 캐시 적중률이 높다.
+     */
+    @Cacheable(value = "agentByApiKey", key = "#apiKey")
+    public Agent findByApiKey(String apiKey) {
+        return agentRepository.findByApiKey(apiKey)
+            .orElseThrow(() -> new UnauthorizedException("유효하지 않은 API 키입니다."));
+    }
+
+    /**
      * 업체 상세 조회 (수정 모달 진입 시 사용)
      * isVisible 무관하게 id로 조회한다 (숨김 처리된 업체도 직접 조회 가능).
      */
@@ -92,8 +106,10 @@ public class AgentService {
 
     /**
      * 업체 수정
+     * api_key 변경 가능성이 있으므로 캐시 전체 무효화
      */
     @Transactional
+    @CacheEvict(value = "agentByApiKey", allEntries = true)
     public ResMessage<AgentDTO.DetailResponse> update(Long id, AgentDTO.UpdateRequest req) {
         Agent agent = agentRepository.findById(id)
             .orElseThrow(() -> new EntityNotFoundException("업체를 찾을 수 없습니다. id=" + id));
@@ -103,10 +119,12 @@ public class AgentService {
 
     /**
      * 업체 삭제 (soft delete, 복수 처리)
+     * 삭제 후 api_key로 인증 시도해도 캐시에 남지 않도록 무효화
      * isVisible을 N으로 변경한다. 실제 데이터는 삭제되지 않는다.
      * 존재하지 않는 id는 findAllById에서 조용히 무시된다.
      */
     @Transactional
+    @CacheEvict(value = "agentByApiKey", allEntries = true)
     public void delete(AgentDTO.DeleteRequest req) {
         List<Agent> agents = agentRepository.findAllById(req.getIds());
         agents.forEach(Agent::hide);

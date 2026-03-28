@@ -33,6 +33,12 @@ export interface AgentDetail {
   contactEmail: string | null
   address: string | null
   memo: string | null
+  /** ERP 연동 API 키 (외부 API 인증에 사용) */
+  apiKey: string | null
+  /** ERP 측 webhook 수신 URL */
+  callbackUrl: string | null
+  /** ERP 측 webhook 인증 키 */
+  callbackKey: string | null
   createdAt: string
   updatedAt: string
 }
@@ -45,6 +51,12 @@ export interface AgentSaveRequest {
   contactEmail?: string
   address?: string
   memo?: string
+  /** ERP 연동 API 키 */
+  apiKey?: string
+  /** ERP 측 webhook 수신 URL */
+  callbackUrl?: string
+  /** ERP 측 webhook 인증 키 */
+  callbackKey?: string
 }
 
 /** 업체담당자 단건 항목 (목록 조회 응답 + 저장 요청에 공용) */

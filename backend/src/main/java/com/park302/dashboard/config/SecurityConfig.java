@@ -1,39 +1,70 @@
 package com.park302.dashboard.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.park302.dashboard.service.AgentService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 /**
  * Spring Security 설정
  *
- * [현재 상태 - 임시]
- * JWT 인증이 미구현된 상태로, 모든 요청을 허용(permitAll)한다.
- * CLAUDE.md "추후 구현 예정 (필수) 작업" 참고 — JWT 구현 완료 시 이 설정을 교체해야 한다.
+ * 두 가지 인증 레이어:
+ * 1. /api/external/** — X-Api-Key 헤더로 업체 인증 (ApiKeyAuthFilter)
+ * 2. /api/** (그 외) — JWT Bearer 토큰으로 관리자 인증 (JwtAuthenticationFilter)
+ * 3. /api/auth/login — 인증 불필요 (로그인 엔드포인트)
  *
- * [JWT 구현 후 변경 사항]
- * - JwtAuthenticationFilter 등록
- * - 로그인 endpoint(/api/auth/login)만 허용, 나머지는 인증 필요
- * - CORS 설정 (프론트엔드 origin 허용)
+ * 필터 등록 순서: ApiKeyAuthFilter → JwtAuthenticationFilter → UsernamePasswordAuthenticationFilter
+ * ApiKeyAuthFilter는 /api/external/** 외 경로는 shouldNotFilter로 건너뜀.
+ * JwtAuthenticationFilter는 /api/external/** 경로는 shouldNotFilter로 건너뜀.
  */
 @Configuration
 @EnableWebSecurity
+@RequiredArgsConstructor
 public class SecurityConfig {
+
+    private final JwtUtil jwtUtil;
+    private final AgentService agentService;
+    private final ObjectMapper objectMapper;
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-            // CSRF: REST API + JWT 방식에서는 불필요
+            // CSRF: REST API + JWT/ApiKey 방식에서 불필요
             .csrf(AbstractHttpConfigurer::disable)
-            // 세션 미사용 (JWT stateless)
+            // 세션 미사용 (stateless)
             .sessionManagement(session ->
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            // TODO: JWT 구현 후 인증 필요 경로로 교체
-            .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
+            .authorizeHttpRequests(auth -> auth
+                // 로그인 엔드포인트는 인증 불필요
+                .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
+                // 외부 연동 API는 ApiKeyAuthFilter에서 인증 처리 — Spring Security 인가는 통과
+                .requestMatchers("/api/external/**").permitAll()
+                // 나머지 API는 JWT 인증 필요
+                .requestMatchers("/api/**").authenticated()
+                // 그 외 (프론트엔드 정적 리소스 등)
+                .anyRequest().permitAll()
+            )
+            // JWT 필터: UsernamePasswordAuthenticationFilter 앞에 삽입
+            .addFilterBefore(new JwtAuthenticationFilter(jwtUtil),
+                UsernamePasswordAuthenticationFilter.class)
+            // ApiKey 필터: JWT 필터 앞에 삽입 (/api/external/** 만 동작)
+            .addFilterBefore(new ApiKeyAuthFilter(agentService, objectMapper),
+                JwtAuthenticationFilter.class);
 
         return http.build();
     }

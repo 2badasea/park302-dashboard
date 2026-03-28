@@ -35,6 +35,9 @@ const EMPTY_FORM: AgentSaveRequest = {
   contactEmail: '',
   address: '',
   memo: '',
+  apiKey: '',
+  callbackUrl: '',
+  callbackKey: '',
 }
 
 /**
@@ -103,6 +106,9 @@ function AgentModal({ agentId, onClose, onSaved }: AgentModalProps) {
           contactEmail: d.contactEmail ?? '',
           address: d.address ?? '',
           memo: d.memo ?? '',
+          apiKey: d.apiKey ?? '',
+          callbackUrl: d.callbackUrl ?? '',
+          callbackKey: d.callbackKey ?? '',
         })
         // 담당자 데이터를 그리드에 주입
         // id 필드는 columns에 없어도 tui-grid 내부에 보존되어 getData()로 회수 가능
@@ -360,6 +366,54 @@ function AgentModal({ agentId, onClose, onSaved }: AgentModalProps) {
               </div>
             </div>
             <div ref={managerGridContainerRef} />
+          </div>
+
+          {/* ERP 연동 설정 */}
+          <div className="col-12">
+            <hr className="my-1" />
+            <p className="fw-semibold mb-2 text-secondary small">ERP 연동 설정</p>
+          </div>
+
+          {/* API Key */}
+          <div className="col-md-6">
+            <label className="form-label">API Key</label>
+            <input
+              type="text"
+              className="form-control"
+              name="apiKey"
+              value={form.apiKey ?? ''}
+              onChange={handleChange}
+              placeholder="X-Api-Key 헤더 인증값 (예: cali-local-api)"
+              maxLength={100}
+            />
+          </div>
+
+          {/* Callback Key */}
+          <div className="col-md-6">
+            <label className="form-label">Callback Key</label>
+            <input
+              type="text"
+              className="form-control"
+              name="callbackKey"
+              value={form.callbackKey ?? ''}
+              onChange={handleChange}
+              placeholder="webhook 발송 시 X-Api-Key 헤더값"
+              maxLength={100}
+            />
+          </div>
+
+          {/* Callback URL */}
+          <div className="col-12">
+            <label className="form-label">Callback URL</label>
+            <input
+              type="text"
+              className="form-control"
+              name="callbackUrl"
+              value={form.callbackUrl ?? ''}
+              onChange={handleChange}
+              placeholder="개발팀 댓글 등록 시 webhook 수신 URL (예: http://localhost:8050/api/callback/alarm)"
+              maxLength={500}
+            />
           </div>
 
           {/* 메모 */}

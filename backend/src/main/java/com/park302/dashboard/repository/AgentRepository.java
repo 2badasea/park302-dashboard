@@ -10,6 +10,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Optional;
+
 @Repository
 public interface AgentRepository extends JpaRepository<Agent, Long> {
 
@@ -64,4 +66,10 @@ public interface AgentRepository extends JpaRepository<Agent, Long> {
         @Param("keyword") String keyword,
         Pageable pageable
     );
+
+    /**
+     * api_key로 업체 조회 — ApiKeyAuthFilter에서 호출.
+     * AgentService.findByApiKey()에서 @Cacheable로 캐싱됨.
+     */
+    Optional<Agent> findByApiKey(String apiKey);
 }

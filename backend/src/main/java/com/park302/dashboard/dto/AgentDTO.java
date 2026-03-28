@@ -47,6 +47,15 @@ public class AgentDTO {
         @Size(max = 50, message = "Client Code는 50자 이내로 입력해 주세요.")
         private String clientCode;
 
+        @Size(max = 100, message = "API Key는 100자 이내로 입력해 주세요.")
+        private String apiKey;
+
+        @Size(max = 500, message = "Callback URL은 500자 이내로 입력해 주세요.")
+        private String callbackUrl;
+
+        @Size(max = 100, message = "Callback Key는 100자 이내로 입력해 주세요.")
+        private String callbackKey;
+
         @Size(max = 20)
         private String businessNumber;
 
@@ -74,6 +83,15 @@ public class AgentDTO {
 
         @Size(max = 50, message = "Client Code는 50자 이내로 입력해 주세요.")
         private String clientCode;
+
+        @Size(max = 100, message = "API Key는 100자 이내로 입력해 주세요.")
+        private String apiKey;
+
+        @Size(max = 500, message = "Callback URL은 500자 이내로 입력해 주세요.")
+        private String callbackUrl;
+
+        @Size(max = 100, message = "Callback Key는 100자 이내로 입력해 주세요.")
+        private String callbackKey;
 
         @Size(max = 20)
         private String businessNumber;
@@ -124,6 +142,9 @@ public class AgentDTO {
         Long id,
         String name,
         String clientCode,
+        String apiKey,
+        String callbackUrl,
+        String callbackKey,
         String businessNumber,
         String contactTel,
         String contactEmail,

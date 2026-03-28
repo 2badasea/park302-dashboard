@@ -51,6 +51,31 @@ public class GlobalApiExceptionHandler {
     }
 
     /**
+     * 인증 실패 (401)
+     * ApiKeyAuthFilter 이후 컨트롤러 계층에서 발생한 인증 실패 예외 처리
+     */
+    @ExceptionHandler(com.park302.dashboard.common.exception.UnauthorizedException.class)
+    public ResponseEntity<ResMessage<Void>> handleUnauthorized(
+        com.park302.dashboard.common.exception.UnauthorizedException e) {
+        log.warn("Unauthorized: {}", e.getMessage());
+        return ResponseEntity
+            .status(HttpStatus.UNAUTHORIZED)
+            .body(new ResMessage<>(-1, e.getMessage(), null));
+    }
+
+    /**
+     * 잘못된 요청 파라미터 (400)
+     * 예: 댓글 2depth 초과, 부모 댓글 소속 불일치 등
+     */
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ResMessage<Void>> handleIllegalArgument(IllegalArgumentException e) {
+        log.warn("IllegalArgument: {}", e.getMessage());
+        return ResponseEntity
+            .status(HttpStatus.BAD_REQUEST)
+            .body(new ResMessage<>(-1, e.getMessage(), null));
+    }
+
+    /**
      * 처리되지 않은 모든 예외 (500)
      * 스택트레이스는 로그에만 남기고, 클라이언트에는 내부 정보를 노출하지 않는다.
      */
